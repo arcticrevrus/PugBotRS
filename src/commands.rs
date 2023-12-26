@@ -79,12 +79,7 @@ pub async fn add(
                 .await
             {
                 if interaction.data.custom_id == "add_tank" {
-                    interaction.create_interaction_response(ctx.serenity_context(), |response| {
-                        response
-                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-                            .interaction_response_data(|message| message.content("Added to queue as Tank!").ephemeral(true))
-                    })
-                    .await?;
+                    create_ephemeral_response(ctx, interaction, "Added to Queue as Tealer!".to_owned()).await?;
                     let player = Player {
                         name: ctx.author().clone(),
                         role: Roles::Tank,
@@ -92,12 +87,7 @@ pub async fn add(
                     let mut queue = ctx.data().tank_queue.lock().await;
                     queue.push(player);
                 } else if interaction.data.custom_id == "add_healer" {
-                    interaction.create_interaction_response(ctx.serenity_context(), |response| {
-                        response
-                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-                            .interaction_response_data(|message| message.content("Added to queue as Healer!").ephemeral(true))
-                    })
-                    .await?;
+                    create_ephemeral_response(ctx, interaction, "Added to Queue as Healer!".to_owned()).await?;
                     let player = Player {
                         name: ctx.author().clone(),
                         role: Roles::Healer,
@@ -105,12 +95,7 @@ pub async fn add(
                     let mut queue = ctx.data().healer_queue.lock().await;
                     queue.push(player);
                 } else if interaction.data.custom_id == "add_dps" {
-                    interaction.create_interaction_response(ctx.serenity_context(), |response| {
-                        response
-                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-                            .interaction_response_data(|message| message.content("Added to queue as DPS!").ephemeral(true))
-                    })
-                    .await?;
+                    create_ephemeral_response(ctx, interaction, "Added to Queue as DPS!".to_owned()).await?;
                     let player = Player {
                         name: ctx.author().clone(),
                         role: Roles::DPS,
@@ -124,8 +109,6 @@ pub async fn add(
     }
     Ok(())
 }
-
-
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn remove(

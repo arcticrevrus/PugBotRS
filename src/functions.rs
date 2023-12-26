@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use poise::serenity_prelude::{self as serenity};
+use poise::serenity_prelude::{self as serenity, MessageComponentInteraction};
 use crate::serenity::ChannelId;
 
 pub struct Data {
@@ -41,6 +41,15 @@ pub async fn channel_check(ctx: Context<'_>) -> bool {
         }).await.unwrap();
         return false
     }
+}
+
+pub async fn create_ephemeral_response(ctx: Context<'_>, interaction: &Arc<MessageComponentInteraction>, input_message: String) -> Result<(), Error> {
+    let content = interaction.create_interaction_response(ctx.serenity_context(), |response|{
+        response
+            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
+            .interaction_response_data(|message| message.content(input_message).ephemeral(true))
+    }).await?;
+    Ok(content)
 }
 
 pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
