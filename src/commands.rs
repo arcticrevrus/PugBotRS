@@ -44,83 +44,83 @@ pub async fn add(
             queue_check(ctx).await?;
         } else {
 
-        let response = ctx.send(|m| {
-            m.content("Click a button to join the queue.")
-            .ephemeral(true)
-            .components(|c| {
-                c.create_action_row(|row| {
-                    row.create_button(|button| {
-                        button
-                            .style(serenity::ButtonStyle::Primary)
-                            .label("Tank")
-                            .custom_id("add_tank")
-                    });
-                    row.create_button(|button| {
-                        button
-                            .style(serenity::ButtonStyle::Success)
-                            .label("Healer")
-                            .custom_id("add_healer")
-                    });
-                    row.create_button(|button| {
-                        button
-                            .style(serenity::ButtonStyle::Danger)
-                            .label("DPS")
-                            .custom_id("add_dps")
+            let response = ctx.send(|m| {
+                m.content("Click a button to join the queue.")
+                .ephemeral(true)
+                .components(|c| {
+                    c.create_action_row(|row| {
+                        row.create_button(|button| {
+                            button
+                                .style(serenity::ButtonStyle::Primary)
+                                .label("Tank")
+                                .custom_id("add_tank")
+                        });
+                        row.create_button(|button| {
+                            button
+                                .style(serenity::ButtonStyle::Success)
+                                .label("Healer")
+                                .custom_id("add_healer")
+                        });
+                        row.create_button(|button| {
+                            button
+                                .style(serenity::ButtonStyle::Danger)
+                                .label("DPS")
+                                .custom_id("add_dps")
+                        })
                     })
                 })
-            })
-        }).await?;
+            }).await?;
 
-        let message = response.message().await?;
+            let message = response.message().await?;
 
-        if let Some(interaction) = &message
-            .await_component_interaction(ctx.serenity_context())
-            .timeout(std::time::Duration::from_secs(60))
-            .await
-        {
-            if interaction.data.custom_id == "add_tank" {
-                interaction.create_interaction_response(ctx.serenity_context(), |response| {
-                    response
-                        .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content("Added to queue as Tank!").ephemeral(true))
-                })
-                .await?;
-                let player = Player {
-                    name: ctx.author().clone(),
-                    role: Roles::Tank,
-                };
-                let mut queue = ctx.data().tank_queue.lock().await;
-                queue.push(player);
-            } else if interaction.data.custom_id == "add_healer" {
-                interaction.create_interaction_response(ctx.serenity_context(), |response| {
-                    response
-                        .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content("Added to queue as Healer!").ephemeral(true))
-                })
-                .await?;
-                let player = Player {
-                    name: ctx.author().clone(),
-                    role: Roles::Healer,
-                };
-                let mut queue = ctx.data().healer_queue.lock().await;
-                queue.push(player);
-            } else if interaction.data.custom_id == "add_dps" {
-                interaction.create_interaction_response(ctx.serenity_context(), |response| {
-                    response
-                        .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content("Added to queue as DPS!").ephemeral(true))
-                })
-                .await?;
-                let player = Player {
-                    name: ctx.author().clone(),
-                    role: Roles::DPS,
-                };
-                let mut queue = ctx.data().dps_queue.lock().await;
-                queue.push(player);
+            if let Some(interaction) = &message
+                .await_component_interaction(ctx.serenity_context())
+                .timeout(std::time::Duration::from_secs(60))
+                .await
+            {
+                if interaction.data.custom_id == "add_tank" {
+                    interaction.create_interaction_response(ctx.serenity_context(), |response| {
+                        response
+                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| message.content("Added to queue as Tank!").ephemeral(true))
+                    })
+                    .await?;
+                    let player = Player {
+                        name: ctx.author().clone(),
+                        role: Roles::Tank,
+                    };
+                    let mut queue = ctx.data().tank_queue.lock().await;
+                    queue.push(player);
+                } else if interaction.data.custom_id == "add_healer" {
+                    interaction.create_interaction_response(ctx.serenity_context(), |response| {
+                        response
+                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| message.content("Added to queue as Healer!").ephemeral(true))
+                    })
+                    .await?;
+                    let player = Player {
+                        name: ctx.author().clone(),
+                        role: Roles::Healer,
+                    };
+                    let mut queue = ctx.data().healer_queue.lock().await;
+                    queue.push(player);
+                } else if interaction.data.custom_id == "add_dps" {
+                    interaction.create_interaction_response(ctx.serenity_context(), |response| {
+                        response
+                            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
+                            .interaction_response_data(|message| message.content("Added to queue as DPS!").ephemeral(true))
+                    })
+                    .await?;
+                    let player = Player {
+                        name: ctx.author().clone(),
+                        role: Roles::DPS,
+                    };
+                    let mut queue = ctx.data().dps_queue.lock().await;
+                    queue.push(player);
 
+                }
             }
         }
-    }
     }
     Ok(())
 }
