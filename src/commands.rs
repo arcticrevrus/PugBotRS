@@ -9,41 +9,15 @@ pub async fn add(
     #[description = "Add to queue"] role: Option<String>,
 ) -> Result<(), Error> {
     if channel_check(ctx).await {
-        if let Some(role_str) = role {
-            let role_enum = match role_str.as_str() {
-                "Tank" => Roles::Tank,
-                "Healer" => Roles::Healer,
-                "DPS" => Roles::DPS,
-                _ => {
-                    ctx.say("Invalid role. Please choose Tank, Healer, or DPS.").await?;
-                    return Ok(());
-                }
-            };
-        
-            let player = Player {
-                name: ctx.author().clone(),
-                role: role_enum,
-            };
-        
-        
-            match player.role {
-                Roles::Tank => {
-                    let mut queue = ctx.data().tank_queue.lock().await;
-                    queue.push(player);
+        if let Some(role_) = role {
+            let player = create_player(ctx, role_).await;
+            match player {
+                Ok(player) => {
+                    push_to_queue(ctx, player).await?;
                 },
-                Roles::Healer => {
-                    let mut queue = ctx.data().healer_queue.lock().await;
-                    queue.push(player);
-                },
-                Roles::DPS => {
-                    let mut queue = ctx.data().dps_queue.lock().await;
-                    queue.push(player);
-                },
+                Err(e) => {ctx.say(format!("{}",e)).await?;}
             }
-            ctx.say(format!("Player {} added to the queue as {}.", ctx.author().name, role_str)).await?;
-            queue_check(ctx).await?;
         } else {
-
             let response = ctx.send(|m| {
                 m.content("Click a button to join the queue.")
                 .ephemeral(true)
@@ -79,36 +53,41 @@ pub async fn add(
                 .await
             {
                 if interaction.data.custom_id == "add_tank" {
-                    create_ephemeral_response(ctx, interaction, "Added to Queue as Tealer!".to_owned()).await?;
-                    let player = Player {
-                        name: ctx.author().clone(),
-                        role: Roles::Tank,
-                    };
-                    let mut queue = ctx.data().tank_queue.lock().await;
-                    queue.push(player);
+                    create_ephemeral_response(ctx, interaction, "Added to Queue as Tank!".to_owned()).await?;
+                    let player = create_player(ctx, "tank".to_owned()).await;
+                    match player {
+                        Ok(player) => {
+                            push_to_queue(ctx, player).await?;
+                        },
+                        Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
+                    }
                 } else if interaction.data.custom_id == "add_healer" {
                     create_ephemeral_response(ctx, interaction, "Added to Queue as Healer!".to_owned()).await?;
-                    let player = Player {
-                        name: ctx.author().clone(),
-                        role: Roles::Healer,
-                    };
-                    let mut queue = ctx.data().healer_queue.lock().await;
-                    queue.push(player);
+                    let player = create_player(ctx, "healer".to_owned()).await;
+                    match player {
+                        Ok(player) => {
+                            push_to_queue(ctx, player).await?;
+                            queue_check(ctx).await.unwrap();
+                        },
+                        Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
+                    }
                 } else if interaction.data.custom_id == "add_dps" {
                     create_ephemeral_response(ctx, interaction, "Added to Queue as DPS!".to_owned()).await?;
-                    let player = Player {
-                        name: ctx.author().clone(),
-                        role: Roles::DPS,
-                    };
-                    let mut queue = ctx.data().dps_queue.lock().await;
-                    queue.push(player);
-
+                    let player = create_player(ctx, "dps".to_owned()).await;
+                    match player {
+                        Ok(player) => {
+                            push_to_queue(ctx, player).await?;
+                        },
+                        Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
+                    }
                 }
             }
         }
     }
     Ok(())
 }
+
+
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn remove(
@@ -123,6 +102,6 @@ pub async fn remove(
 pub async fn queue(
     ctx: Context<'_>
 ) -> Result<(), Error> {
-    ctx.say(print_current_queue(ctx).await).await?;
+    ctx.say(print_current_queue(ctx).await).await.unwrap();
     Ok(())
 }

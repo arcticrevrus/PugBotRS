@@ -43,13 +43,45 @@ pub async fn channel_check(ctx: Context<'_>) -> bool {
     }
 }
 
-pub async fn create_ephemeral_response(ctx: Context<'_>, interaction: &Arc<MessageComponentInteraction>, input_message: String) -> Result<(), Error> {
-    let content = interaction.create_interaction_response(ctx.serenity_context(), |response|{
-        response
-            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|message| message.content(input_message).ephemeral(true))
-    }).await?;
-    Ok(content)
+pub async fn create_player(ctx: Context<'_>, role_str: String) -> Result<Player, &'static str> {
+    match string_to_role(role_str) {
+        Some(role) => Ok(Player {
+            name: ctx.author().clone(),
+            role,
+        }),
+        None => Err("Invalid Role. must be Tank, Healer, or DPS"),
+    }
+}
+
+fn string_to_role(role_str: String) -> Option<Roles> {
+    match role_str {
+        role => match role.to_lowercase().as_str() {
+            "tank" => Some(Roles::Tank),
+            "healer" => Some(Roles::Healer),
+            "dps" => Some(Roles::DPS),
+            _ => None,
+        }
+    }
+}
+
+pub async fn push_to_queue(ctx: Context<'_>, player: Player) -> Result<(), Error> {
+    ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
+    match player.role {
+        Roles::Tank => {
+            let mut queue = ctx.data().tank_queue.lock().await;
+            queue.push(player);
+        }
+        Roles::Healer => {
+            let mut queue = ctx.data().tank_queue.lock().await;
+            queue.push(player);
+        }
+        Roles::DPS => {
+            let mut queue = ctx.data().tank_queue.lock().await;
+            queue.push(player);
+        }
+    }
+    queue_check(ctx).await?;
+    Ok(())
 }
 
 pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
@@ -65,6 +97,17 @@ pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
     }
     Ok(())
 }
+
+pub async fn create_ephemeral_response(ctx: Context<'_>, interaction: &Arc<MessageComponentInteraction>, input_message: String) -> Result<(), Error> {
+    let content = interaction.create_interaction_response(ctx.serenity_context(), |response|{
+        response
+            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
+            .interaction_response_data(|message| message.content(input_message).ephemeral(true))
+    }).await?;
+    Ok(content)
+}
+
+
 
 fn add_players_to_game_found(
     tank_queue: tokio::sync::MutexGuard<'_, Vec<Player>>,
