@@ -25,6 +25,24 @@ pub struct Player {
     pub role: Roles,
 }
 
+pub async fn channel_check(ctx: Context<'_>) -> bool {
+    let data = ctx.data();
+    let listen_channel_id = *data.listen_channel_id.lock().await; // Lock and dereference the channel ID
+    if ctx.channel_id() == listen_channel_id {
+        return true
+    } else {
+        let channel_name = match ctx.serenity_context().http.get_channel(listen_channel_id.0).await {
+            Ok(channel) => channel.guild().unwrap().name, // Assuming it's a guild channel
+            Err(_) => listen_channel_id.to_string(), // Fallback to channel ID if name cannot be fetched
+        };
+        ctx.send(|m| {
+            m.content(format!("This command must be sent in #{}", channel_name))
+            .ephemeral(true)
+        }).await.unwrap();
+        return false
+    }
+}
+
 pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
     let data = ctx.data();
     let tank_queue = data.tank_queue.lock().await;

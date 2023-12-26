@@ -8,9 +8,7 @@ pub async fn add(
     ctx: Context<'_>,
     #[description = "Add to queue"] role: Option<String>,
 ) -> Result<(), Error> {
-    let data = ctx.data();
-    let listen_channel_id = *data.listen_channel_id.lock().await; // Lock and dereference the channel ID
-    if ctx.channel_id() ==  listen_channel_id {
+    if channel_check(ctx).await {
         if let Some(role_str) = role {
             let role_enum = match role_str.as_str() {
                 "Tank" => Roles::Tank,
@@ -123,20 +121,11 @@ pub async fn add(
             }
         }
     }
-    } else {
-        // Attempt to fetch the channel name
-        let channel_name = match ctx.serenity_context().http.get_channel(listen_channel_id.0).await {
-            Ok(channel) => channel.guild().unwrap().name, // Assuming it's a guild channel
-            Err(_) => listen_channel_id.to_string(), // Fallback to channel ID if name cannot be fetched
-        };
-        ctx.send(|m| {
-            m.content(format!("Commands must be sent in #{}", channel_name))
-            .ephemeral(true)
-        })
-        .await?;
     }
     Ok(())
 }
+
+
 
 #[poise::command(slash_command, prefix_command)]
 pub async fn remove(
@@ -154,4 +143,3 @@ pub async fn queue(
     ctx.say(print_current_queue(ctx).await).await?;
     Ok(())
 }
-
