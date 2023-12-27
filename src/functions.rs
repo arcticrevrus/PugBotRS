@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use poise::serenity_prelude::{self as serenity};
+use poise::serenity_prelude::{self as serenity, ButtonStyle};
 use crate::serenity::ChannelId;
 
 pub struct Data {
@@ -69,7 +69,7 @@ pub async fn push_to_queue(ctx: Context<'_>, player: Player) -> Result<(), Error
         Roles::Tank => {
             let mut queue = ctx.data().tank_queue.lock().await;
             if queue.contains(&player) {
-                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned()).await?;
+                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned(), None).await?;
             } else {
                 ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
                 queue.push(player);
@@ -78,7 +78,7 @@ pub async fn push_to_queue(ctx: Context<'_>, player: Player) -> Result<(), Error
         Roles::Healer => {
             let mut queue = ctx.data().healer_queue.lock().await;
             if queue.contains(&player) {
-                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned()).await?;
+                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned(), None).await?;
             } else {
                 ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
                 queue.push(player);
@@ -87,7 +87,7 @@ pub async fn push_to_queue(ctx: Context<'_>, player: Player) -> Result<(), Error
         Roles::DPS => {
             let mut queue = ctx.data().dps_queue.lock().await;
             if queue.contains(&player) {
-                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned()).await?;
+                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned(), None).await?;
             } else {
                 ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
                 queue.push(player);
@@ -112,14 +112,41 @@ pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String) -> Result<(), Error> {
-    ctx.send(|m|{
-        m.content(input_message)
-        .ephemeral(true)
-    }).await?;
+
+
+
+pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String, components: Option<Vec<Button>>) -> Result<(), Error> {
+    if let Some(components) = components {
+        ctx.send(|m|
+            m.content(input_message)
+            .ephemeral(true)
+            .components(|c|
+                c.create_action_row(|row| {
+                    for button in &components {
+                        row.create_button(|b| {
+                            b.style(button.style)
+                             .label(&button.label)
+                             .custom_id(&button.id)
+                        });
+                    }
+                    row
+                })
+            )
+        ).await?;
+    } else {
+        ctx.send(|m|{
+            m.content(input_message)
+            .ephemeral(true)
+        }).await?;
+    }
     Ok(())
 }
 
+pub struct Button {
+    style: ButtonStyle,
+    label: String,
+    id: String
+}
 
 fn add_players_to_game_found(
     tank_queue: tokio::sync::MutexGuard<'_, Vec<Player>>,

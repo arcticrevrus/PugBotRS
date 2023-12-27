@@ -53,7 +53,7 @@ pub async fn add(
                 .await
             {
                 if interaction.data.custom_id == "add_tank" {
-                    create_ephemeral_response(ctx, "Added to Queue as Tank!".to_owned()).await?;
+                    create_ephemeral_response(ctx, "Added to Queue as Tank!".to_owned(), None).await?;
                     let player = create_player(ctx, "tank".to_owned()).await;
                     match player {
                         Ok(player) => {
@@ -62,7 +62,7 @@ pub async fn add(
                         Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
                     }
                 } else if interaction.data.custom_id == "add_healer" {
-                    create_ephemeral_response(ctx, "Added to Queue as Healer!".to_owned()).await?;
+                    create_ephemeral_response(ctx, "Added to Queue as Healer!".to_owned(), None).await?;
                     let player = create_player(ctx, "healer".to_owned()).await;
                     match player {
                         Ok(player) => {
@@ -72,7 +72,7 @@ pub async fn add(
                         Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
                     }
                 } else if interaction.data.custom_id == "add_dps" {
-                    create_ephemeral_response(ctx, "Added to Queue as DPS!".to_owned()).await?;
+                    create_ephemeral_response(ctx, "Added to Queue as DPS!".to_owned(), None).await?;
                     let player = create_player(ctx, "dps".to_owned()).await;
                     match player {
                         Ok(player) => {
