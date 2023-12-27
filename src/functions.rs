@@ -120,16 +120,6 @@ pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String) 
     Ok(())
 }
 
-//pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String) -> Result<(), Error> {
-//    let content = ctxcreate_interaction_response(ctx.serenity_context(), |response|{
-//        response
-//            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-//            .interaction_response_data(|message| message.content(input_message).ephemeral(true))
-//    }).await?;
-//    Ok(content)
-//}
-
-
 
 fn add_players_to_game_found(
     tank_queue: tokio::sync::MutexGuard<'_, Vec<Player>>,
