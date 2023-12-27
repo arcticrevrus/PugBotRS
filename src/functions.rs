@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use poise::serenity_prelude::{self as serenity, MessageComponentInteraction};
+use poise::serenity_prelude::{self as serenity};
 use crate::serenity::ChannelId;
 
 pub struct Data {
@@ -12,14 +12,14 @@ pub struct Data {
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Context<'a> = poise::Context<'a, Data, Error>;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Eq)]
 pub enum Roles {
     Tank,
     Healer,
     DPS,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Player {
     pub name: serenity::User,
     pub role: Roles,
@@ -65,19 +65,33 @@ fn string_to_role(role_str: String) -> Option<Roles> {
 }
 
 pub async fn push_to_queue(ctx: Context<'_>, player: Player) -> Result<(), Error> {
-    ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
     match player.role {
         Roles::Tank => {
             let mut queue = ctx.data().tank_queue.lock().await;
-            queue.push(player);
+            if queue.contains(&player) {
+                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned()).await?;
+            } else {
+                ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
+                queue.push(player);
+            }
         }
         Roles::Healer => {
-            let mut queue = ctx.data().tank_queue.lock().await;
-            queue.push(player);
+            let mut queue = ctx.data().healer_queue.lock().await;
+            if queue.contains(&player) {
+                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned()).await?;
+            } else {
+                ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
+                queue.push(player);
+            }
         }
         Roles::DPS => {
-            let mut queue = ctx.data().tank_queue.lock().await;
-            queue.push(player);
+            let mut queue = ctx.data().dps_queue.lock().await;
+            if queue.contains(&player) {
+                create_ephemeral_response(ctx, format!("You are already in the {:?} queue", &player.role).to_owned()).await?;
+            } else {
+                ctx.say(format!("{} joined the queue as {:?}", ctx.author(), player.role)).await.unwrap();
+                queue.push(player);
+            }
         }
     }
     queue_check(ctx).await?;
@@ -98,14 +112,22 @@ pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn create_ephemeral_response(ctx: Context<'_>, interaction: &Arc<MessageComponentInteraction>, input_message: String) -> Result<(), Error> {
-    let content = interaction.create_interaction_response(ctx.serenity_context(), |response|{
-        response
-            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
-            .interaction_response_data(|message| message.content(input_message).ephemeral(true))
+pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String) -> Result<(), Error> {
+    ctx.send(|m|{
+        m.content(input_message)
+        .ephemeral(true)
     }).await?;
-    Ok(content)
+    Ok(())
 }
+
+//pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String) -> Result<(), Error> {
+//    let content = ctxcreate_interaction_response(ctx.serenity_context(), |response|{
+//        response
+//            .kind(serenity::model::application::interaction::InteractionResponseType::ChannelMessageWithSource)
+//            .interaction_response_data(|message| message.content(input_message).ephemeral(true))
+//    }).await?;
+//    Ok(content)
+//}
 
 
 
