@@ -112,6 +112,7 @@ pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+
 pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String, components: Option<Vec<Button>>) -> Result<(), Error> {
     if let Some(components) = components {
         ctx.send(|m|
@@ -151,6 +152,28 @@ pub async fn event_handler(
     _framework: poise::FrameworkContext<'_, Data, Error>,
     data: &Data,
 ) -> Result<(), Error> {
+    match event {
+        poise::Event::InteractionCreate { interaction } => {
+            if let serenity::model::interactions::Interaction::MessageComponent(mc) = interaction {
+                let custom_id = &mc.data.custom_id[..];
+                match custom_id {    
+                    "add_tank" => {
+                        ()
+                    }
+                    "add_healer" => {
+                        println!("Healer")
+                    }
+                    "add_dps" => {
+                        println!("DPS")
+                    }
+                    _ => {
+                        println!("Not Implemented")
+                    }
+                }
+            }
+        }
+        _ => ()
+    }
     Ok(())
 }
     
