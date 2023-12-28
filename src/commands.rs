@@ -10,7 +10,7 @@ pub async fn add(
 ) -> Result<(), Error> {
     if channel_check(ctx).await {
         if let Some(role_) = role {
-            let player = create_player(ctx, role_).await;
+            let player = create_player(ctx.author().clone(), role_).await;
             match player {
                 Ok(player) => {
                     push_to_queue(ctx, player).await?;
@@ -18,75 +18,27 @@ pub async fn add(
                 Err(e) => {ctx.say(format!("{}",e)).await?;}
             }
         } else {
-            let response = ctx.send(|m| {
-                m.content("Click a button to join the queue.")
-                .ephemeral(true)
-                .components(|c| {
-                    c.create_action_row(|row| {
-                        row.create_button(|button| {
-                            button
-                                .style(serenity::ButtonStyle::Primary)
-                                .label("Tank")
-                                .custom_id("add_tank")
-                        });
-                        row.create_button(|button| {
-                            button
-                                .style(serenity::ButtonStyle::Success)
-                                .label("Healer")
-                                .custom_id("add_healer")
-                        });
-                        row.create_button(|button| {
-                            button
-                                .style(serenity::ButtonStyle::Danger)
-                                .label("DPS")
-                                .custom_id("add_dps")
-                        })
-                    })
-                })
-            }).await?;
-
-            let message = response.message().await?;
-
-            if let Some(interaction) = &message
-                .await_component_interaction(ctx.serenity_context())
-                .timeout(std::time::Duration::from_secs(60))
-                .await
-            {
-                if interaction.data.custom_id == "add_tank" {
-                    create_ephemeral_response(ctx, "Added to Queue as Tank!".to_owned(), None).await?;
-                    let player = create_player(ctx, "tank".to_owned()).await;
-                    match player {
-                        Ok(player) => {
-                            push_to_queue(ctx, player).await?;
-                        },
-                        Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
-                    }
-                } else if interaction.data.custom_id == "add_healer" {
-                    create_ephemeral_response(ctx, "Added to Queue as Healer!".to_owned(), None).await?;
-                    let player = create_player(ctx, "healer".to_owned()).await;
-                    match player {
-                        Ok(player) => {
-                            push_to_queue(ctx, player).await?;
-                            queue_check(ctx).await.unwrap();
-                        },
-                        Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
-                    }
-                } else if interaction.data.custom_id == "add_dps" {
-                    create_ephemeral_response(ctx, "Added to Queue as DPS!".to_owned(), None).await?;
-                    let player = create_player(ctx, "dps".to_owned()).await;
-                    match player {
-                        Ok(player) => {
-                            push_to_queue(ctx, player).await?;
-                        },
-                        Err(e) => {ctx.say(format!("{}",e)).await.unwrap();}
-                    }
-                }
-            }
+            let tank_button = Button {
+                style: serenity::ButtonStyle::Primary,
+                label: "Tank".to_owned(),
+                id: "add_tank".to_owned(),
+            };
+            let healer_button = Button {
+                style: serenity::ButtonStyle::Success,
+                label: "Healer".to_owned(),
+                id: "add_healer".to_owned(),
+            };
+            let dps_button = Button {
+                style: serenity::ButtonStyle::Danger,
+                label: "DPS".to_owned(),
+                id: "add_dps".to_owned(),
+            };
+            let components = vec![tank_button, healer_button, dps_button];
+            create_ephemeral_response(ctx, "Click a button to join the queue.".to_owned(), Some(components)).await?;
         }
     }
     Ok(())
 }
-
 
 
 #[poise::command(slash_command, prefix_command)]

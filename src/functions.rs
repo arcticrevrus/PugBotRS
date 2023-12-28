@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use poise::serenity_prelude::{self as serenity, ButtonStyle};
+use poise::serenity_prelude::{self as serenity, ButtonStyle, InteractionCreateEvent};
 use crate::serenity::ChannelId;
 
 pub struct Data {
@@ -43,10 +43,10 @@ pub async fn channel_check(ctx: Context<'_>) -> bool {
     }
 }
 
-pub async fn create_player(ctx: Context<'_>, role_str: String) -> Result<Player, &'static str> {
+pub async fn create_player(author: serenity::User, role_str: String) -> Result<Player, &'static str> {
     match string_to_role(role_str) {
         Some(role) => Ok(Player {
-            name: ctx.author().clone(),
+            name: author,
             role,
         }),
         None => Err("Invalid Role. must be Tank, Healer, or DPS"),
@@ -112,9 +112,6 @@ pub async fn queue_check(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-
-
-
 pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String, components: Option<Vec<Button>>) -> Result<(), Error> {
     if let Some(components) = components {
         ctx.send(|m|
@@ -143,11 +140,20 @@ pub async fn create_ephemeral_response(ctx: Context<'_>, input_message: String, 
 }
 
 pub struct Button {
-    style: ButtonStyle,
-    label: String,
-    id: String
+    pub style: ButtonStyle,
+    pub label: String,
+    pub id: String
 }
 
+pub async fn event_handler(
+    ctx: &serenity::Context,
+    event: &poise::Event<'_>,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data,
+) -> Result<(), Error> {
+    Ok(())
+}
+    
 fn add_players_to_game_found(
     tank_queue: tokio::sync::MutexGuard<'_, Vec<Player>>,
     healer_queue: tokio::sync::MutexGuard<'_, Vec<Player>>,
@@ -159,8 +165,6 @@ fn add_players_to_game_found(
     final_queue.push_str(&add_dps_to_game_found(dps_queue));
     return final_queue
 }
-
-
 
 fn add_tank_to_game_found(mut tank_queue: tokio::sync::MutexGuard<'_, Vec<Player>>) -> String {
     let Some(tank) = &tank_queue.pop() else { return "Error adding tank to queue".to_owned() };
